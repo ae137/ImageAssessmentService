@@ -1,0 +1,9 @@
+tensorflow==2.11
+tensorflow-gpu==2.11
+tensorflow_hub==0.12.0
+grpcio-tools==1.44.0
+fire
+black
+pytest
+mypy
+types-protobuf

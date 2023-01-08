@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Generated code
+*_pb2_grpc.py
+*_pb2.py

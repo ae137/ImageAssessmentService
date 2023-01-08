@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message ImageAssessmentRequest {
+    string path = 1;
+    bytes image_bytes = 2;
+}
+
+message ImageAssessmentResponse {
+    string path = 1;
+    double assessment_aesthetic = 2;
+    double assessment_technical = 3;
+}
+
+service ImageAssessment {
+    rpc Assess(ImageAssessmentRequest) returns (ImageAssessmentResponse);
+}
