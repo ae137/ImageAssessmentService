@@ -7,3 +7,4 @@ black
 pytest
 mypy
 types-protobuf
+tqdm

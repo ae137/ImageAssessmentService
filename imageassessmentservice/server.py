@@ -3,7 +3,6 @@ from concurrent import futures
 import fire
 import grpc
 
-import numpy as np
 import tensorflow as tf
 import tensorflow_hub as tf_hub
 
@@ -29,9 +28,14 @@ class ImageAssessmentService(ImageAssessmentServicer):
             "serving_default"
         ]
 
+        # TODO: Add applying models to empty images to speed up further processing!
+
         print("Ready to assess images")
 
     def Assess(self, request, context):
+
+        print(f"Assessing {request.path}.")
+
         image_bytes_tensor = tf.constant(request.image_bytes)
 
         output_musiq_ava = self.predict_fn_musiq_ava(image_bytes_tensor)
@@ -48,7 +52,13 @@ class ImageAssessmentService(ImageAssessmentServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    options = [
+        (
+            "grpc.max_receive_message_length",
+            25 * 1024**2,
+        ),  # Maximum message size of 25 MB
+    ]
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     add_ImageAssessmentServicer_to_server(ImageAssessmentService(), server)
 
     server.add_insecure_port("[::]:50051")
