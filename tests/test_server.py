@@ -11,11 +11,12 @@ def test_assess() -> None:
     image = tf.io.encode_jpeg(np.zeros((128, 256, 3), dtype=np.uint8))
 
     request = ImageAssessmentRequest(
-        path="path/to/image.jpg", image_bytes=image.numpy()
+        image_path="path/to/image.jpg", image_hash="abcdefg", image_bytes=image.numpy()
     )
 
     response = service.Assess(request, None)
 
-    assert response.path == "path/to/image.jpg"
+    assert response.image_path == "path/to/image.jpg"
+    assert response.image_hash == "abcdefg"
     assert response.assessment_aesthetic > 2.5
     assert response.assessment_technical > 50.0

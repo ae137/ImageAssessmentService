@@ -8,6 +8,7 @@ from imageassessmentservice.client import (
     map_ratings_to_bins,
     infer_on_images,
 )
+from imageassessmentservice.definitions import RATING_NAMES
 
 
 def test_normalize_ratings() -> None:
@@ -19,7 +20,7 @@ def test_normalize_ratings() -> None:
         }
     )
 
-    normalized_ratings = normalize_ratings(ratings, ["aesthetic", "technical"])
+    normalized_ratings = normalize_ratings(ratings, RATING_NAMES)
 
     assert pytest.approx(normalized_ratings["aesthetic_normalized"].mean()) == 0
     assert pytest.approx(normalized_ratings["aesthetic_normalized"].std()) == 1
@@ -51,24 +52,23 @@ def test_map_ratings_to_bins(
 def test_infer_on_images_bad_input(tmp_path: Path) -> None:
     input_folder = tmp_path / "input"
 
+    # Check case where output file has wrong suffix
     ratings_output_file = tmp_path / "ratings.csv"
 
-    # Check case where input folder does not exist
     with pytest.raises(FileNotFoundError):
         infer_on_images(str(input_folder), str(ratings_output_file))
 
     input_folder.mkdir()
-    ratings_output_file.touch()
 
-    # Check case where output file exists already
-    with pytest.raises(FileExistsError):
-        infer_on_images(str(input_folder), str(ratings_output_file))
+    bad_ratings_output_file = tmp_path / "bad_output_file.txt"
+    with pytest.raises(FileNotFoundError):
+        infer_on_images(str(input_folder), str(bad_ratings_output_file))
 
-    # Check case where output file has wrong suffix
-    ratings_output_file_bad = tmp_path / "ratings.txt"
-
-    with pytest.raises(ValueError):
-        infer_on_images(str(input_folder), str(ratings_output_file_bad))
+    bad_ratings_output_path = (
+        tmp_path / "non_existing_output_folder" / "bad_output_file.csv"
+    )
+    with pytest.raises(FileNotFoundError):
+        infer_on_images(str(input_folder), str(bad_ratings_output_path))
 
 
 def test_infer_on_images(tmp_path: Path, mocker) -> None:
@@ -86,7 +86,7 @@ def test_infer_on_images(tmp_path: Path, mocker) -> None:
     input_file_3 = input_folder / "other_file.txt"
     input_file_3.touch()
 
-    ratings_output_file = tmp_path / "ratings.csv"
+    ratings_file = tmp_path / "ratings.csv"
 
     # Mock the rate_images function to return a fixed result
     mocker.patch(
@@ -95,6 +95,7 @@ def test_infer_on_images(tmp_path: Path, mocker) -> None:
             pd.DataFrame(
                 {
                     "image_path": [input_file_1, input_file_2],
+                    "image_hash_sha256": ["abcde", "fghij"],
                     "aesthetic": [1, 2],
                     "technical": [2, 4],
                 }
@@ -105,19 +106,19 @@ def test_infer_on_images(tmp_path: Path, mocker) -> None:
 
     infer_on_images(
         input_folder=str(input_folder),
-        ratings_output_file=str(ratings_output_file),
+        ratings_file=str(ratings_file),
         num_bins=2,
     )
 
-    ratings_result = pd.read_csv(ratings_output_file)
-    ratings_result.drop(
-        columns=["Unnamed: 0"], inplace=True
-    )  # Drop index column that is not expected from saved data
+    ratings_result = pd.read_csv(ratings_file)
 
     expected_result = pd.DataFrame(
         {
             "image_path": [str(input_file_1), str(input_file_2), str(input_file_3)],
+            "image_hash_sha256": ["abcde", "fghij", "no hash computed"],
             "rating_new": [1, 2, -1],
+            "aesthetic": [1, 2, -1],
+            "technical": [2, 4, -1],
         }
     )
 
