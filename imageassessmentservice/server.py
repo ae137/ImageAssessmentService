@@ -33,7 +33,6 @@ class ImageAssessmentService(ImageAssessmentServicer):
         print("Ready to assess images")
 
     def Assess(self, request, context):
-
         print(f"Assessing {request.path}.")
 
         image_bytes_tensor = tf.constant(request.image_bytes)

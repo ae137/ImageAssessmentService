@@ -1,5 +1,0 @@
-tensorflow==2.11
-grpcio-tools==1.44.0
-fire
-pandas
-tqdm
