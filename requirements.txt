@@ -1,11 +1,11 @@
-tensorflow==2.11
-tensorflow-gpu==2.11
-tensorflow_hub==0.12.0
-grpcio-tools==1.44.0
+tensorflow-gpu==2.11.0
+tensorflow-hub==0.12.0
+grpcio-tools==1.48.2
 fire
 pandas
 tqdm
 black
 pytest
+pytest-mock
 mypy
 types-protobuf
