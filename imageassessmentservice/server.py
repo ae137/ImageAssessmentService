@@ -6,8 +6,9 @@ import grpc
 import tensorflow as tf
 import tensorflow_hub as tf_hub
 
-from imageassessment_pb2 import ImageAssessmentResponse
-from imageassessment_pb2_grpc import (
+from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB
+from imageassessmentservice.imageassessment_pb2 import ImageAssessmentResponse
+from imageassessmentservice.imageassessment_pb2_grpc import (
     ImageAssessmentServicer,
     add_ImageAssessmentServicer_to_server,
 )
@@ -28,12 +29,9 @@ class ImageAssessmentService(ImageAssessmentServicer):
             "serving_default"
         ]
 
-        # TODO: Add applying models to empty images to speed up further processing!
-
         print("Ready to assess images")
 
     def Assess(self, request, context):
-
         print(f"Assessing {request.path}.")
 
         image_bytes_tensor = tf.constant(request.image_bytes)
@@ -55,8 +53,8 @@ def serve():
     options = [
         (
             "grpc.max_receive_message_length",
-            25 * 1024**2,
-        ),  # Maximum message size of 25 MB
+            MAX_GRPC_MESSAGE_SIZE_MB * 1024**2,
+        ),
     ]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     add_ImageAssessmentServicer_to_server(ImageAssessmentService(), server)
