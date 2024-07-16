@@ -14,7 +14,8 @@ from imageassessmentservice.imageassessment_pb2_grpc import (
 )
 
 physical_devices = tf.config.list_physical_devices("GPU")
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+if physical_devices:
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 class ImageAssessmentService(ImageAssessmentServicer):
@@ -32,7 +33,7 @@ class ImageAssessmentService(ImageAssessmentServicer):
         print("Ready to assess images")
 
     def Assess(self, request, context):
-        print(f"Assessing {request.path}.")
+        print(f"Assessing {request.image_path} / {request.image_hash}.")
 
         image_bytes_tensor = tf.constant(request.image_bytes)
 
@@ -43,7 +44,8 @@ class ImageAssessmentService(ImageAssessmentServicer):
         rating_paq2piq = output_musiq_paq2piq["output_0"].numpy()
 
         return ImageAssessmentResponse(
-            path=request.path,
+            image_path=request.image_path,
+            image_hash=request.image_hash,
             assessment_aesthetic=rating_ava,
             assessment_technical=rating_paq2piq,
         )

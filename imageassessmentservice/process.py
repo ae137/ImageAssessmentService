@@ -180,7 +180,6 @@ class ImageSorter:
         self.target_path = target_path
 
     def sort(self, image_path: Path, int_rating: int):
-
         print(f"Image of category {int_rating}.")
         target_path = build_target_path(
             image_path, self.source_path, self.target_path / f"{int_rating}"

@@ -131,3 +131,6 @@ dmypy.json
 # Generated code
 *_pb2_grpc.py
 *_pb2.py
+
+# IDE
+.vscode

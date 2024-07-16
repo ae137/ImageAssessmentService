@@ -15,7 +15,11 @@ python -m grpc_tools.protoc -I protobufs --python_out=imageassessmentservice --g
 ```
 This command needs to be executed in the root folder of the repository. 
 
-I did not find a good way (yet) to generate up-to-date protobuf files during package installation.
+I did not find a good way (yet) to generate up-to-date protobuf files during package installation. Therefore it is
+easiest to install the package including the generated code via
+```bash
+pip install .
+```
 
 ## Assessing images by running the client and server
 After setting up a Python environment containing the dependencies, the assessment server can be run by executing

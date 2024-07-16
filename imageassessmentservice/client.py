@@ -1,14 +1,16 @@
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import fire
 import grpc
+import hashlib
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tqdm import tqdm
 
-from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB
+from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB, RATING_NAMES
+from imageassessmentservice.ratings_cache import RatingsCache
 from imageassessmentservice.imageassessment_pb2 import ImageAssessmentRequest
 from imageassessmentservice.imageassessment_pb2_grpc import ImageAssessmentStub
 
@@ -18,7 +20,7 @@ if physical_devices:
 
 
 def rate_images(
-    image_paths: List[Path], address: str
+    image_paths: List[Path], address: str, ratings_cache: RatingsCache | None
 ) -> Tuple[pd.DataFrame, List[Path]]:
     options = [
         (
@@ -32,14 +34,30 @@ def rate_images(
     ratings = []
     images_with_issues = []
 
-    print("Obtaining ratings")
-
     for image_path in tqdm(image_paths):
         image_path_str = str(image_path)
         image_bytes = tf.io.read_file(image_path_str)
+        # image_hash_sha256 = hashlib.sha256(image_bytes).hexdigest()
+        with open(image_path_str, "rb") as image_file_object:
+            image_hash_sha256 = hashlib.file_digest(
+                image_file_object, "sha256"
+            ).hexdigest()
+
+        if ratings_cache is not None and ratings_cache.contains(image_hash_sha256):
+            print(f"Reusing previous result for image {image_path}")
+            ratings.append(
+                {
+                    "image_path": image_path_str,
+                    "image_hash_sha256": image_hash_sha256,
+                    **ratings_cache.retrieve(image_hash_sha256),
+                }
+            )
+            continue
 
         request = ImageAssessmentRequest(
-            path=image_path_str, image_bytes=image_bytes.numpy()
+            image_path=image_path_str,
+            image_hash=image_hash_sha256,
+            image_bytes=image_bytes.numpy(),
         )
 
         try:
@@ -47,11 +65,21 @@ def rate_images(
 
             ratings.append(
                 {
-                    "image_path": response.path,
+                    "image_path": response.image_path,
+                    "image_hash_sha256": response.image_hash,
                     "aesthetic": response.assessment_aesthetic,
                     "technical": response.assessment_technical,
                 }
             )
+
+            if ratings_cache is not None:
+                ratings_cache.update(
+                    response.image_hash,
+                    {
+                        "aesthetic": response.assessment_aesthetic,
+                        "technical": response.assessment_technical,
+                    },
+                )
 
         except Exception as e:
             print(f"Cannot rate image {image_path}.")
@@ -60,7 +88,9 @@ def rate_images(
     return pd.DataFrame(ratings), images_with_issues
 
 
-def normalize_ratings(ratings: pd.DataFrame, rating_names: List[str]) -> pd.DataFrame:
+def normalize_ratings(
+    ratings: pd.DataFrame, rating_names: tuple[str, str]
+) -> pd.DataFrame:
     """Normalize ratings to have zero mean and unit variance.
 
     Parameters
@@ -82,8 +112,6 @@ def normalize_ratings(ratings: pd.DataFrame, rating_names: List[str]) -> pd.Data
     ratings["overall"] = ratings[
         [f"{rating_name}_normalized" for rating_name in rating_names]
     ].mean(axis=1)
-
-    ratings.drop(columns=rating_names, inplace=True)
 
     return ratings
 
@@ -127,9 +155,10 @@ def map_ratings_to_bins(num_bins: int, ratings: pd.Series) -> pd.Series:
 
 def infer_on_images(
     input_folder: str,
-    ratings_output_file: str,
+    ratings_file: str,
     address: str = "localhost",
     num_bins: int = 5,
+    ratings_cache_file: Optional[str] = None,
 ) -> None:
     """
     Run image assessment and sort images according to result.
@@ -138,25 +167,33 @@ def infer_on_images(
     ----------
     input_folder
         Folder containing the images to be assessed
-    ratings_output_file
+    ratings_file
         File to which the ratings should be stored
     address
         Host where the image assessment service is running
     num_bins
         Number of bins in which to sort the images
-    """
+    ratings_cache_file
+        File containing previous ratings and where updated ratings are stored
 
+    Notes
+    -----
+    If use_previous_ratings==False, ratings_file will not be overwritten.
+    """
     source_folder_path = Path(input_folder)
-    ratings_output_file_path = Path(ratings_output_file)
+    ratings_file_path = Path(ratings_file)
+
+    ratings_cache: RatingsCache | None = (
+        RatingsCache(ratings_cache_file) if ratings_cache_file else None
+    )
 
     if not source_folder_path.exists() or source_folder_path.is_file():
         raise FileNotFoundError("Input folder does not exist or is a file.")
 
-    if ratings_output_file_path.exists():
-        raise FileExistsError("Output file exists already. It will not be overwritten.")
-
-    if ratings_output_file_path.suffix != ".csv":
-        raise ValueError("Expect output file to have suffix 'csv'.")
+    if not ratings_file_path.parent.exists() or ratings_file_path.suffix != ".csv":
+        raise FileNotFoundError(
+            "Parent folder of output file does not exist or output file has wrong file ending."
+        )
 
     file_paths = list(source_folder_path.rglob("*"))
 
@@ -168,25 +205,36 @@ def infer_on_images(
         if not (x.suffix.lower() in image_file_endings or x.is_dir())
     ]
 
-    raw_ratings, images_with_issues = rate_images(image_paths, address)
+    raw_ratings, images_with_issues = rate_images(image_paths, address, ratings_cache)
 
-    rating_names = ["aesthetic", "technical"]
-    normalized_ratings = normalize_ratings(raw_ratings, rating_names)
+    normalized_ratings = normalize_ratings(raw_ratings, RATING_NAMES)
 
     normalized_ratings["rating_new"] = map_ratings_to_bins(
         num_bins, normalized_ratings["overall"]
     )
 
-    rating_data = normalized_ratings[["image_path", "rating_new"]]
+    rating_data = normalized_ratings[
+        ["image_path", "image_hash_sha256", "rating_new", *RATING_NAMES]
+    ]
 
     files_without_ratings = pd.DataFrame(
-        {"image_path": other_paths, "rating_new": [-1] * len(other_paths)}
+        {
+            "image_path": other_paths,
+            "image_hash_sha256": ["no hash computed"] * len(other_paths),
+            **{
+                rating_name: [-1] * len(other_paths)
+                for rating_name in ["rating_new", *RATING_NAMES]
+            },
+        }
     )
 
     all_data = pd.concat([rating_data, files_without_ratings], ignore_index=True)
     all_data["rating_new"] = all_data["rating_new"].astype(int)
 
-    all_data.to_csv(ratings_output_file_path)
+    all_data.to_csv(ratings_file_path, index=False)
+
+    if ratings_cache is not None:
+        ratings_cache.store()
 
 
 if __name__ == "__main__":
