@@ -1,14 +1,18 @@
 from concurrent import futures
 
 import fire
+import os
+import sys
 import grpc
 
 import tensorflow as tf
 import tensorflow_hub as tf_hub
 
-from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB
-from imageassessmentservice.imageassessment_pb2 import ImageAssessmentResponse
-from imageassessmentservice.imageassessment_pb2_grpc import (
+sys.path.append(os.path.join(os.path.dirname(__file__), "generated"))
+
+from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB  # noqa: E402
+from imageassessment_pb2 import ImageAssessmentResponse  # noqa: E402
+from imageassessment_pb2_grpc import (  # noqa: E402
     ImageAssessmentServicer,
     add_ImageAssessmentServicer_to_server,
 )

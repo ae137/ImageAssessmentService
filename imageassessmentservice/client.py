@@ -1,7 +1,9 @@
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 
 import fire
+import os
+import sys
 import grpc
 import hashlib
 import numpy as np
@@ -9,10 +11,15 @@ import pandas as pd
 import tensorflow as tf
 from tqdm import tqdm
 
-from imageassessmentservice.definitions import MAX_GRPC_MESSAGE_SIZE_MB, RATING_NAMES
-from imageassessmentservice.ratings_cache import RatingsCache
-from imageassessmentservice.imageassessment_pb2 import ImageAssessmentRequest
-from imageassessmentservice.imageassessment_pb2_grpc import ImageAssessmentStub
+sys.path.append(os.path.join(os.path.dirname(__file__), "generated"))
+
+from imageassessmentservice.definitions import (  # noqa: E402
+    MAX_GRPC_MESSAGE_SIZE_MB,
+    RATING_NAMES,
+)
+from imageassessmentservice.ratings_cache import RatingsCache  # noqa: E402
+from imageassessment_pb2 import ImageAssessmentRequest  # noqa: E402
+from imageassessment_pb2_grpc import ImageAssessmentStub  # noqa: E402
 
 physical_devices = tf.config.list_physical_devices("GPU")
 if physical_devices:
@@ -81,8 +88,8 @@ def rate_images(
                     },
                 )
 
-        except Exception as e:
-            print(f"Cannot rate image {image_path}.")
+        except Exception as error:
+            print(f"Cannot rate image {image_path} with error {str(error)}.")
             images_with_issues.append(image_path)
 
     return pd.DataFrame(ratings), images_with_issues

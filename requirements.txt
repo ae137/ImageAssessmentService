@@ -10,3 +10,5 @@ pytest-mock
 mypy
 types-protobuf
 flake8
+protobuf==4.24.4
+grpcio==1.60.0

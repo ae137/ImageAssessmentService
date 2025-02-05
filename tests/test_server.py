@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from imageassessmentservice.server import ImageAssessmentService
-from imageassessmentservice.imageassessment_pb2 import ImageAssessmentRequest
+from imageassessment_pb2 import ImageAssessmentRequest
 
 
 def test_assess() -> None:

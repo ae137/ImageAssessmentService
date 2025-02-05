@@ -14,7 +14,12 @@ def read_requirements() -> List[str]:
 
 setup(
     name="imageassessmentservice",
-    version="0.0.1",
+    version="0.0.2",
+    classifiers=[
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+    ],
+    keywords="image assessment service",
     author="ae137",
     author_email="a_e_mailings@posteo.de",
     packages=find_packages(
