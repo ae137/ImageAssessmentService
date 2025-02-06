@@ -27,11 +27,13 @@ clean:
 build: generate
 	$(PYTHON) setup.py sdist bdist_wheel
 
-# Install dependencies
+# Install package
 install: build
 	pip install .
 
+# Install dependencies
 deps:
 	pip install -r requirements.txt
 
+# Install dependencies and package
 install-all: deps install

@@ -10,7 +10,7 @@ The package can be built by running the following command in the root folder of 
 ```bash
 make build
 ```
-This will create Python modules from the Protobuf files, build the package and create `build` and `dist` folder containing the built package.
+This will create Python modules from the Protobuf files, build the package and create `build` and `dist` folders containing the built package.
 
 ### Installing dependencies
 The dependencies of `imageassessmentservice` are listed in `requirements.txt`. They can be installed by running the
