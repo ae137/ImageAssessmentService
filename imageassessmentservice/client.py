@@ -212,6 +212,9 @@ def infer_on_images(
         if not (x.suffix.lower() in image_file_endings or x.is_dir())
     ]
 
+    if len(image_paths) == 0:
+        raise FileNotFoundError("No images found in input folder.")
+
     raw_ratings, images_with_issues = rate_images(image_paths, address, ratings_cache)
 
     normalized_ratings = normalize_ratings(raw_ratings, RATING_NAMES)

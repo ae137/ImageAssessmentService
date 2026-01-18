@@ -134,3 +134,9 @@ dmypy.json
 
 # IDE
 .vscode
+
+# Notebooks
+notebooks
+
+# Generated code
+imageassessmentservice/generated
