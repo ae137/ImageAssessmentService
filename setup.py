@@ -14,7 +14,7 @@ def read_requirements() -> List[str]:
 
 setup(
     name="imageassessmentservice",
-    version="0.0.2",
+    version="0.0.3",
     classifiers=[
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

@@ -1,6 +1,6 @@
-tensorflow==2.15
-tensorflow_hub==0.15.0
-grpcio-tools==1.60.0
+tensorflow==2.20.0
+tensorflow_hub==0.16.1
+grpcio-tools==1.78.0
 fire
 pandas
 tqdm
@@ -10,5 +10,5 @@ pytest-mock
 mypy
 types-protobuf
 flake8
-protobuf==4.25.8
-grpcio==1.60.0
+protobuf==6.33.5
+grpcio==1.78.0

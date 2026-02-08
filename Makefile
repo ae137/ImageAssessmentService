@@ -29,11 +29,12 @@ build: generate
 
 # Install package
 install: build
-	pip install .
+	uv pip install .
 
 # Install dependencies
 deps:
-	pip install -r requirements.txt
+	uv pip install -r requirements.txt
 
 # Install dependencies and package
 install-all: deps install
+

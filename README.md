@@ -5,6 +5,11 @@ assessed based on aesthetic and technical aspects. This is achieved by running t
 aesthetic assessment and one for technical assessment, with weights from Tensorflow Hub.
 
 ## Setup
+
+### Installing `uv` to manage Python environments
+The `Makefile` uses `uv` to manage Python environments. Installation instructions for `uv` can be found [here](https://docs.astral.sh/uv/getting-started/installation/).
+
+
 ### Building the package
 The package can be built by running the following command in the root folder of the repository:
 ```bash
